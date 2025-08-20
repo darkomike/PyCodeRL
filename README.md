@@ -48,11 +48,11 @@ Multi-Modal State Encoder
 │   Agent     │   Agent     │Agent │
 └─────────────┴─────────────┴─────┘
         ↓
-x86 Instruction Generator
+ARM64 Instruction Generator
         ↓
 Machine Code Optimizer
         ↓
-Executable x86 Machine Code
+Executable ARM64 Machine Code
 ```
 
 ### Core Components
@@ -121,7 +121,7 @@ result = fibonacci(10)
 print(f"Result: {result}")
 """
 
-# Compile to x86 machine code
+# Compile to ARM64 machine code
 assembly, metrics = compiler.compile_to_machine_code(python_code)
 
 print(f"Compilation time: {metrics['compilation_time']:.4f}s")
@@ -194,13 +194,13 @@ The core innovation is a hierarchical multi-agent RL system where specialized ag
 - Balances performance vs. compilation speed trade-offs
 - Coordinates lower-level agent decisions
 
-**Instruction Selection Agent**: Maps Python operations to x86 instructions
+**Instruction Selection Agent**: Maps Python operations to ARM64 instructions
 - Learns optimal instruction sequences for Python constructs
 - Handles dynamic dispatch and polymorphic operations
 - Discovers fusion opportunities and micro-optimizations
 
 **Register Allocation Agent**: Optimizes register usage
-- Manages x86 register allocation for Python variables
+- Manages ARM64 register allocation for Python variables
 - Handles Python's dynamic typing and variable scoping
 - Minimizes spill operations and memory traffic
 
@@ -255,7 +255,7 @@ Training follows a curriculum learning approach:
 
 **Phase 1 (Correctness)**: Focus on generating functionally correct code
 - Emphasize semantic preservation and Python compatibility
-- Learn basic Python→x86 instruction mappings
+- Learn basic Python→ARM64 instruction mappings
 - Establish compilation success on simple programs
 
 **Phase 2 (Optimization)**: Develop performance optimization strategies
@@ -379,7 +379,7 @@ compiler.enable_arch_optimizations(['simd', 'branch_prediction'])
 
 #### `PyCodeRLCompiler`
 
-Main compiler interface for Python to x86 compilation.
+Main compiler interface for Python to ARM64 compilation.
 
 ```python
 class PyCodeRLCompiler:
@@ -438,7 +438,7 @@ config = {
     # Compilation settings
     'compilation': {
         'optimization_level': 'balanced',  # 'speed', 'size', 'balanced'
-        'target_arch': 'x86_64',
+        'target_arch': 'arm64',
         'enable_simd': True,
         'max_compilation_time': 30.0
     },
@@ -589,7 +589,7 @@ PyCodeRL is released under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-We thank the Python Software Foundation for early access to Python 3.13 features, Intel Corporation for x86 optimization guidance, and the broader compiler research community for foundational work that made this project possible.
+We thank the Python Software Foundation for early access to Python 3.13 features, Apple Inc. for ARM64 optimization guidance, and the broader compiler research community for foundational work that made this project possible.
 
 Special thanks to contributors from:
 - LLVM Development Community
