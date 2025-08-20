@@ -1,0 +1,29 @@
+# PyCodeRL Configuration
+{
+    "training": {
+        "learning_rate": 3e-4,
+        "batch_size": 32,
+        "num_episodes": 2000,
+        "eval_interval": 100,
+        "clip_epsilon": 0.2,
+        "gamma": 0.99,
+        "gae_lambda": 0.95
+    },
+    "model": {
+        "state_dim": 512,
+        "hidden_dim": 256,
+        "num_registers": 12,
+        "instruction_types": 16
+    },
+    "compilation": {
+        "optimization_level": "balanced",
+        "target_architecture": "x86_64",
+        "enable_simd": true,
+        "max_compilation_time": 30.0
+    },
+    "evaluation": {
+        "benchmark_iterations": 5,
+        "timeout_seconds": 30,
+        "enable_profiling": true
+    }
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-PyCodeRL: Direct Python to x86 Machine Code Generator
-A reinforcement learning framework for direct Python AST to x86 machine code compilation.
+PyCodeRL: Direct Python to ARM64 Machine Code Generator
+A reinforcement learning framework for direct Python AST to ARM64 machine code compilation.
 """
 
 import ast
@@ -24,38 +24,45 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class InstructionType(Enum):
-    """x86 instruction types for our simplified instruction set"""
+    """ARM64 (AArch64) instruction types for our simplified instruction set"""
     MOV = "mov"
     ADD = "add"
     SUB = "sub"
-    MUL = "imul"
-    DIV = "idiv"
+    MUL = "mul"
+    UDIV = "udiv"  # ARM64 uses udiv instead of idiv
     CMP = "cmp"
-    JMP = "jmp"
-    JE = "je"
-    JNE = "jne"
-    JL = "jl"
-    JG = "jg"
-    CALL = "call"
+    B = "b"        # Branch (unconditional jump)
+    BEQ = "b.eq"   # Branch if equal
+    BNE = "b.ne"   # Branch if not equal
+    BLT = "b.lt"   # Branch if less than
+    BGT = "b.gt"   # Branch if greater than
+    BL = "bl"      # Branch with link (call)
     RET = "ret"
-    PUSH = "push"
-    POP = "pop"
+    STP = "stp"    # Store pair (ARM64 push equivalent)
+    LDP = "ldp"    # Load pair (ARM64 pop equivalent)
     NOP = "nop"
 
 class Register(Enum):
-    """x86-64 registers"""
-    RAX = "%rax"
-    RBX = "%rbx" 
-    RCX = "%rcx"
-    RDX = "%rdx"
-    RSI = "%rsi"
-    RDI = "%rdi"
-    RSP = "%rsp"
-    RBP = "%rbp"
-    R8 = "%r8"
-    R9 = "%r9"
-    R10 = "%r10"
-    R11 = "%r11"
+    """ARM64 (AArch64) registers"""
+    X0 = "x0"      # General purpose register 0 (return value, first argument)
+    X1 = "x1"      # General purpose register 1 (second argument)
+    X2 = "x2"      # General purpose register 2 (third argument)
+    X3 = "x3"      # General purpose register 3 (fourth argument)
+    X4 = "x4"      # General purpose register 4
+    X5 = "x5"      # General purpose register 5
+    X6 = "x6"      # General purpose register 6
+    X7 = "x7"      # General purpose register 7
+    X8 = "x8"      # General purpose register 8
+    X9 = "x9"      # General purpose register 9
+    X10 = "x10"    # General purpose register 10
+    X11 = "x11"    # General purpose register 11
+    X12 = "x12"    # General purpose register 12
+    X13 = "x13"    # General purpose register 13
+    X14 = "x14"    # General purpose register 14
+    X15 = "x15"    # General purpose register 15
+    X29 = "x29"    # Frame pointer
+    X30 = "x30"    # Link register
+    SP = "sp"      # Stack pointer
 
 @dataclass
 class CompilationState:
@@ -68,16 +75,20 @@ class CompilationState:
     optimization_context: Dict[str, Any]
 
 @dataclass 
-class x86Instruction:
-    """Represents a single x86 instruction"""
+class ARM64Instruction:
+    """Represents a single ARM64 instruction"""
     opcode: InstructionType
     operands: List[str]
-    comment: Optional[str] = None
+    comment: str = ""
     
-    def __str__(self):
-        operand_str = ", ".join(self.operands) if self.operands else ""
-        comment_str = f"  # {self.comment}" if self.comment else ""
-        return f"    {self.opcode.value} {operand_str}{comment_str}"
+    def __str__(self) -> str:
+        operands_str = ", ".join(self.operands)
+        base = f"    {self.opcode.value}"
+        if operands_str:
+            base += f" {operands_str}"
+        if self.comment:
+            base += f"  // {self.comment}"
+        return base
 
 class PythonSemanticAnalyzer:
     """Analyzes Python AST for semantic information needed for compilation"""
@@ -288,8 +299,8 @@ class PyCodeRLCompiler:
             logger.error(f"Python syntax error: {e}")
             raise
     
-    def compile_ast_node(self, node: ast.AST, state: CompilationState) -> List[x86Instruction]:
-        """Compile a single AST node to x86 instructions"""
+    def compile_ast_node(self, node: ast.AST, state: CompilationState) -> List[ARM64Instruction]:
+        """Compile a single AST node to ARM64 instructions"""
         instructions = []
         
         if isinstance(node, ast.Assign):
@@ -306,12 +317,12 @@ class PyCodeRLCompiler:
             instructions.extend(self._compile_loop(node, state))
         else:
             # Default fallback
-            instructions.append(x86Instruction(InstructionType.NOP, [], f"Unsupported node: {type(node).__name__}"))
+            instructions.append(ARM64Instruction(InstructionType.NOP, [], f"Unsupported node: {type(node).__name__}"))
             
         return instructions
     
-    def _compile_assignment(self, node: ast.Assign, state: CompilationState) -> List[x86Instruction]:
-        """Compile Python assignment to x86"""
+    def _compile_assignment(self, node: ast.Assign, state: CompilationState) -> List[ARM64Instruction]:
+        """Compile Python assignment to ARM64"""
         instructions = []
         
         # Get RL agent decisions
@@ -329,54 +340,54 @@ class PyCodeRLCompiler:
             
             # Compile the value expression
             if isinstance(node.value, ast.Constant):
-                # Direct constant assignment
-                instructions.append(x86Instruction(
+                # Direct constant assignment using ARM64 syntax
+                instructions.append(ARM64Instruction(
                     InstructionType.MOV,
-                    [f"${node.value.value}", selected_register.value],
+                    [selected_register.value, f"#{node.value.value}"],  # ARM64 immediate syntax
                     f"Assign {node.value.value} to {variable_name}"
                 ))
                 state.variable_map[variable_name] = selected_register.value
                 
         return instructions
     
-    def _compile_binary_operation(self, node: ast.BinOp, state: CompilationState) -> List[x86Instruction]:
-        """Compile binary operations"""
+    def _compile_binary_operation(self, node: ast.BinOp, state: CompilationState) -> List[ARM64Instruction]:
+        """Compile binary operations for ARM64"""
         instructions = []
         
         # Get RL decisions
         state_encoding = self.state_encoder(state)
-        action_probs, _ = self.instruction_agent(state_encoding)
+        _, _ = self.instruction_agent(state_encoding)  # Fixed unused variable warning
         
-        # Select operation based on AST node type
+        # Select operation based on AST node type using ARM64 instructions
         if isinstance(node.op, ast.Add):
-            instructions.append(x86Instruction(InstructionType.ADD, ["%rax", "%rbx"], "Addition"))
+            instructions.append(ARM64Instruction(InstructionType.ADD, ["x0", "x0", "x1"], "Addition"))
         elif isinstance(node.op, ast.Sub):
-            instructions.append(x86Instruction(InstructionType.SUB, ["%rax", "%rbx"], "Subtraction"))
+            instructions.append(ARM64Instruction(InstructionType.SUB, ["x0", "x0", "x1"], "Subtraction"))
         elif isinstance(node.op, ast.Mult):
-            instructions.append(x86Instruction(InstructionType.MUL, ["%rbx"], "Multiplication"))
+            instructions.append(ARM64Instruction(InstructionType.MUL, ["x0", "x0", "x1"], "Multiplication"))
             
         return instructions
     
-    def _compile_return(self, node: ast.Return, state: CompilationState) -> List[x86Instruction]:
-        """Compile return statement"""
+    def _compile_return(self, node: ast.Return, state: CompilationState) -> List[ARM64Instruction]:
+        """Compile return statement for ARM64"""
         instructions = []
         
         if node.value:
-            # Move return value to RAX (convention)
+            # Move return value to x0 (ARM64 calling convention)
             if isinstance(node.value, ast.Name):
-                var_location = state.variable_map.get(node.value.id, "%rax")
-                if var_location != "%rax":
-                    instructions.append(x86Instruction(
+                var_location = state.variable_map.get(node.value.id, "x0")
+                if var_location != "x0":
+                    instructions.append(ARM64Instruction(
                         InstructionType.MOV,
-                        [var_location, "%rax"],
-                        f"Move return value to RAX"
+                        [var_location, "x0"],
+                        "Move return value to x0"
                     ))
         
-        instructions.append(x86Instruction(InstructionType.RET, [], "Return"))
+        instructions.append(ARM64Instruction(InstructionType.RET, [], "Return"))
         return instructions
     
-    def _compile_function_call(self, node: ast.Call, state: CompilationState) -> List[x86Instruction]:
-        """Compile function calls"""
+    def _compile_function_call(self, node: ast.Call, state: CompilationState) -> List[ARM64Instruction]:
+        """Compile function calls for ARM64"""
         instructions = []
         
         if isinstance(node.func, ast.Name):
@@ -384,27 +395,27 @@ class PyCodeRLCompiler:
             
             # Handle built-in functions
             if func_name == "print":
-                instructions.append(x86Instruction(
-                    InstructionType.CALL,
-                    ["printf"],
+                instructions.append(ARM64Instruction(
+                    InstructionType.BL,  # Branch with link for ARM64 function calls
+                    ["_printf"],
                     "Call print function"
                 ))
             else:
-                instructions.append(x86Instruction(
-                    InstructionType.CALL,
-                    [func_name],
+                instructions.append(ARM64Instruction(
+                    InstructionType.BL,  # Branch with link for ARM64 function calls
+                    [f"_{func_name}"],  # macOS requires underscore prefix
                     f"Call {func_name}"
                 ))
                 
         return instructions
     
-    def _compile_conditional(self, node: ast.If, state: CompilationState) -> List[x86Instruction]:
-        """Compile if statements"""
+    def _compile_conditional(self, node: ast.If, state: CompilationState) -> List[ARM64Instruction]:
+        """Compile if statements for ARM64"""
         instructions = []
         
-        # Compare condition (simplified)
-        instructions.append(x86Instruction(InstructionType.CMP, ["%rax", "$0"], "Compare condition"))
-        instructions.append(x86Instruction(InstructionType.JE, ["else_label"], "Jump if false"))
+        # Compare condition (simplified) using ARM64 syntax
+        instructions.append(ARM64Instruction(InstructionType.CMP, ["x0", "#0"], "Compare condition"))
+        instructions.append(ARM64Instruction(InstructionType.BEQ, ["else_label"], "Branch if false"))
         
         # Compile body
         for stmt in node.body:
@@ -415,8 +426,8 @@ class PyCodeRLCompiler:
             )
             instructions.extend(self.compile_ast_node(stmt, new_state))
             
-        instructions.append(x86Instruction(InstructionType.JMP, ["endif_label"], "Jump to end"))
-        instructions.append(x86Instruction(InstructionType.NOP, [], "else_label:"))
+        instructions.append(ARM64Instruction(InstructionType.B, ["endif_label"], "Branch to end"))
+        instructions.append(ARM64Instruction(InstructionType.NOP, [], "else_label:"))
         
         # Compile else clause if present
         if node.orelse:
@@ -428,15 +439,15 @@ class PyCodeRLCompiler:
                 )
                 instructions.extend(self.compile_ast_node(stmt, new_state))
         
-        instructions.append(x86Instruction(InstructionType.NOP, [], "endif_label:"))
+        instructions.append(ARM64Instruction(InstructionType.NOP, [], "endif_label:"))
         return instructions
     
-    def _compile_loop(self, node: ast.For, state: CompilationState) -> List[x86Instruction]:
+    def _compile_loop(self, node: ast.For, state: CompilationState) -> List[ARM64Instruction]:
         """Compile for loops"""
         instructions = []
         
         # Simplified loop compilation
-        instructions.append(x86Instruction(InstructionType.NOP, [], "loop_start:"))
+        instructions.append(ARM64Instruction(InstructionType.NOP, [], "loop_start:"))
         
         # Loop body
         for stmt in node.body:
@@ -447,23 +458,24 @@ class PyCodeRLCompiler:
             )
             instructions.extend(self.compile_ast_node(stmt, new_state))
             
-        instructions.append(x86Instruction(InstructionType.JMP, ["loop_start"], "Loop back"))
+        instructions.append(ARM64Instruction(InstructionType.JMP, ["loop_start"], "Loop back"))
         return instructions
     
-    def generate_assembly(self, instructions: List[x86Instruction]) -> str:
-        """Generate AT&T syntax assembly code"""
+    def generate_assembly(self, instructions: List[ARM64Instruction]) -> str:
+        """Generate ARM64 assembly code for macOS"""
         assembly = [
-            ".text",
-            ".globl main",
-            "main:"
+            ".section __TEXT,__text,regular,pure_instructions",
+            ".globl _main",
+            ".align 2",
+            "_main:"
         ]
         
         for instruction in instructions:
             assembly.append(str(instruction))
             
-        # Add standard epilogue
+        # Add standard ARM64 epilogue
         assembly.extend([
-            "    movl $0, %eax  # Return 0",
+            "    mov x0, #0        // Return 0",
             "    ret",
             ""
         ])
@@ -471,7 +483,7 @@ class PyCodeRLCompiler:
         return "\n".join(assembly)
     
     def compile_to_machine_code(self, python_code: str) -> Tuple[str, Dict[str, float]]:
-        """Compile Python code directly to x86 machine code"""
+        """Compile Python code directly to ARM64 machine code"""
         start_time = time.time()
         
         try:

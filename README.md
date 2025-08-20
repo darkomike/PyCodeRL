@@ -1,19 +1,19 @@
-# PyCodeRL: Direct Python to x86 Machine Code Generator
+# PyCodeRL: Direct Python to ARM64 Machine Code Generator
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/release/python-380/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 
-PyCodeRL is a groundbreaking reinforcement learning framework for direct compilation of Python source code to x86 machine code, bypassing traditional intermediate representations entirely. This research implementation demonstrates how neural networks can learn to optimize compilation decisions for performance while maintaining full Python language compatibility.
+PyCodeRL is a groundbreaking reinforcement learning framework for direct compilation of Python source code to ARM64 machine code, bypassing traditional intermediate representations entirely. This research implementation demonstrates how neural networks can learn to optimize compilation decisions for performance while maintaining full Python language compatibility.
 
 ## 🚀 Key Features
 
-- **Direct Compilation**: Python AST → x86 machine code without intermediate representations
+- **Direct Compilation**: Python AST → ARM64 machine code without intermediate representations
 - **Reinforcement Learning**: Multi-agent RL system learns optimal compilation strategies
 - **Python-Aware Optimization**: Specialized handling of Python's dynamic features
 - **Performance Gains**: 3.2× average speedup over CPython, competitive with PyPy
 - **Full Compatibility**: Maintains complete Python language semantics and behavior
-- **Extensible Architecture**: Modular design for easy extension to other architectures
+- **Native ARM64**: Optimized for Apple Silicon and modern ARM64 processors
 
 ## 📊 Performance Highlights
 

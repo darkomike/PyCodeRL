@@ -128,14 +128,7 @@ EOF
 RUN chmod +x docker_test.py
 
 # Run a basic setup check (without full execution test)
-RUN python -c "
-import sys, os
-sys.path.append(os.getcwd())
-from pycode_rl_implementation import PyCodeRLCompiler
-compiler = PyCodeRLCompiler()
-print('✅ PyCodeRL imports successfully in Docker')
-print(f'🏗️  Architecture: {os.uname().machine}')
-"
+RUN python -c "import sys, os; sys.path.append(os.getcwd()); from pycode_rl_implementation import PyCodeRLCompiler; compiler = PyCodeRLCompiler(); print('✅ PyCodeRL imports successfully in Docker'); print(f'🏗️  Architecture: {os.uname().machine}')"
 
 # Expose ports for potential web interfaces
 EXPOSE 8000 8080 8888

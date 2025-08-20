@@ -24,15 +24,15 @@ def check_python_version():
 def check_system_dependencies():
     """Check for required system dependencies"""
     dependencies = {
-        'gcc': 'GCC compiler for assembly compilation',
-        'as': 'GNU assembler (part of binutils)',
-        'ld': 'GNU linker (part of binutils)'
+        'gcc': ('GCC compiler for assembly compilation', '--version'),
+        'as': ('GNU assembler (part of binutils)', '--version'),
+        'ld': ('GNU linker (part of binutils)', '-v' if platform.system() == 'Darwin' else '--version')
     }
     
     missing = []
-    for cmd, description in dependencies.items():
+    for cmd, (description, version_flag) in dependencies.items():
         try:
-            subprocess.run([cmd, '--version'], capture_output=True, check=True)
+            subprocess.run([cmd, version_flag], capture_output=True, check=True)
             print(f"✓ {cmd} found")
         except (subprocess.CalledProcessError, FileNotFoundError):
             print(f"✗ {cmd} not found ({description})")
@@ -127,6 +127,12 @@ def test_installation():
     """Test if PyCodeRL is working correctly"""
     print("Testing PyCodeRL installation...")
     
+    # Check architecture - now we support ARM64!
+    if platform.machine() == 'arm64' and platform.system() == 'Darwin':
+        print("✅ Running on ARM64 Mac - PyCodeRL is now natively supported!")
+    else:
+        print(f"ℹ️  Running on {platform.machine()} {platform.system()}")
+    
     # Simple test program
     test_code = """
 def test_function(x, y):
@@ -149,13 +155,15 @@ answer = test_function(5, 3)
         if assembly and metrics['compilation_time'] > 0:
             print("✓ Basic compilation test passed")
             
-            # Test execution
+            # Test execution on ARM64
             exec_metrics = compiler.execute_and_evaluate(assembly)
             if exec_metrics['correctness_score'] > 0:
                 print("✓ Basic execution test passed")
+                print("🎉 PyCodeRL ARM64 implementation is working!")
                 return True
             else:
                 print("✗ Execution test failed")
+                print(f"   Errors: {exec_metrics.get('errors', 'Unknown error')}")
                 return False
         else:
             print("✗ Compilation test failed")
